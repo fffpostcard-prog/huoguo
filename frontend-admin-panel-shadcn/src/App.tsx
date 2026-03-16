@@ -1,0 +1,32 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from '@/components/ui/sonner';
+import LoginPage from '@/pages/Login';
+import MainLayout from '@/components/layout/MainLayout';
+import HomePage from '@/pages/Home';
+import UsersPage from '@/pages/System/Users';
+import RolesPage from '@/pages/System/Roles';
+import ConfigsPage from '@/pages/System/Configs';
+import SettingsPage from '@/pages/Settings';
+import './App.css';
+
+function App() {
+  return (
+    <>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<Navigate to="/home" replace />} />
+          <Route path="home" element={<HomePage />} />
+          <Route path="dashboard" element={<Navigate to="/system/users" replace />} />
+          <Route path="system/users" element={<UsersPage />} />
+          <Route path="system/roles" element={<RolesPage />} />
+          <Route path="system/configs" element={<ConfigsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+      </Routes>
+      <Toaster />
+    </>
+  );
+}
+
+export default App;
