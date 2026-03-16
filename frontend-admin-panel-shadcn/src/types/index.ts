@@ -195,3 +195,54 @@ export interface ConfigPageQueryParams extends ConfigQueryParams {
   sort?: string;
 }
 
+/**
+ * 打车报销实体
+ * 对应后端 TaxiReimbursement
+ */
+export interface TaxiReimbursement {
+  /** 报销记录唯一标识（UUID） */
+  id?: string;
+  /** 用户ID */
+  userId: string;
+  /** 报销日期（ISO 日期字符串） */
+  reimburseDate: string;
+  /** 去哪里 */
+  destination: string;
+  /** 报销金额 */
+  amount: number;
+  /** 行程目的 */
+  purpose: string;
+  /** 截图地址 */
+  screenshotUrl?: string;
+  /** 创建时间 */
+  createdAt?: string;
+  /** 最近更新时间 */
+  updatedAt?: string;
+}
+
+/**
+ * 打车报销查询参数
+ */
+export interface TaxiReimbursementQueryParams {
+  /** 用户ID（可选） */
+  userId?: string;
+  /** 报销日期（可选，ISO 日期字符串） */
+  reimburseDate?: string;
+  /** 去哪里（可选，支持模糊查询） */
+  destination?: string;
+  /** 行程目的（可选，支持模糊查询） */
+  purpose?: string;
+}
+
+/**
+ * 打车报销分页查询参数
+ */
+export interface TaxiReimbursementPageQueryParams extends TaxiReimbursementQueryParams {
+  /** 页码（从0开始，默认0） */
+  page?: number;
+  /** 每页大小（默认10） */
+  size?: number;
+  /** 排序字段（可选，格式：field,asc/desc，默认按createdAt降序） */
+  sort?: string;
+}
+

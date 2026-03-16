@@ -6,6 +6,7 @@ import HomePage from '@/pages/Home';
 import UsersPage from '@/pages/System/Users';
 import RolesPage from '@/pages/System/Roles';
 import ConfigsPage from '@/pages/System/Configs';
+import TaxiReimbursementsPage from '@/pages/System/TaxiReimbursements';
 import SettingsPage from '@/pages/Settings';
 import './App.css';
 
@@ -21,6 +22,7 @@ function App() {
           <Route path="system/users" element={<UsersPage />} />
           <Route path="system/roles" element={<RolesPage />} />
           <Route path="system/configs" element={<ConfigsPage />} />
+          <Route path="system/taxi-reimbursements" element={<TaxiReimbursementsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

@@ -9,4 +9,5 @@ export * from './Register';
 export * from './AdminSysUser';
 export * from './AdminSysRole';
 export * from './AdminSysConfig';
+export * from './AdminTaxiReimbursement';
 
