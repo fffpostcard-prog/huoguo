@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -31,18 +32,32 @@ public class AdminTaxiReimbursementService {
      *
      * @param userId         用户ID（可选）
      * @param reimburseDate  报销日期（可选）
+     * @param reimburseDateFrom 报销日期范围起（可选，与 reimburseDateTo 同时传入时按范围筛选）
+     * @param reimburseDateTo   报销日期范围止（可选）
      * @param destination    去哪里（可选，支持模糊查询）
      * @param purpose        行程目的（可选，支持模糊查询）
      * @return Flux<TaxiReimbursement> 列表
      */
     public Flux<TaxiReimbursement> query(UUID userId,
                                          LocalDate reimburseDate,
+                                         LocalDate reimburseDateFrom,
+                                         LocalDate reimburseDateTo,
                                          String destination,
                                          String purpose) {
-        Criteria criteria = buildCriteria(userId, reimburseDate, destination, purpose);
+        Criteria criteria = buildCriteria(userId, reimburseDate, reimburseDateFrom, reimburseDateTo, destination, purpose);
         return template.select(TaxiReimbursement.class)
                 .matching(Query.query(criteria))
                 .all();
+    }
+
+    /**
+     * 兼容旧签名：不传范围时仍可调用
+     */
+    public Flux<TaxiReimbursement> query(UUID userId,
+                                         LocalDate reimburseDate,
+                                         String destination,
+                                         String purpose) {
+        return query(userId, reimburseDate, null, null, destination, purpose);
     }
 
     /**
@@ -50,6 +65,8 @@ public class AdminTaxiReimbursementService {
      *
      * @param userId         用户ID（可选）
      * @param reimburseDate  报销日期（可选）
+     * @param reimburseDateFrom 报销日期范围起（可选）
+     * @param reimburseDateTo   报销日期范围止（可选）
      * @param destination    去哪里（可选，支持模糊查询）
      * @param purpose        行程目的（可选，支持模糊查询）
      * @param pageable       分页参数
@@ -57,10 +74,12 @@ public class AdminTaxiReimbursementService {
      */
     public Mono<PageResult<TaxiReimbursement>> queryWithPage(UUID userId,
                                                              LocalDate reimburseDate,
+                                                             LocalDate reimburseDateFrom,
+                                                             LocalDate reimburseDateTo,
                                                              String destination,
                                                              String purpose,
                                                              Pageable pageable) {
-        Criteria criteria = buildCriteria(userId, reimburseDate, destination, purpose);
+        Criteria criteria = buildCriteria(userId, reimburseDate, reimburseDateFrom, reimburseDateTo, destination, purpose);
         Query baseQuery = Query.query(criteria);
 
         Mono<Long> countMono = template.count(baseQuery, TaxiReimbursement.class);
@@ -80,10 +99,42 @@ public class AdminTaxiReimbursementService {
     }
 
     /**
+     * 兼容旧签名：不传范围时仍可调用
+     */
+    public Mono<PageResult<TaxiReimbursement>> queryWithPage(UUID userId,
+                                                             LocalDate reimburseDate,
+                                                             String destination,
+                                                             String purpose,
+                                                             Pageable pageable) {
+        return queryWithPage(userId, reimburseDate, null, null, destination, purpose, pageable);
+    }
+
+    /**
+     * 按条件汇总报销金额
+     *
+     * @return Mono<BigDecimal> 金额合计，无记录时为 0
+     */
+    public Mono<BigDecimal> sumAmount(UUID userId,
+                                      LocalDate reimburseDate,
+                                      LocalDate reimburseDateFrom,
+                                      LocalDate reimburseDateTo,
+                                      String destination,
+                                      String purpose) {
+        Criteria criteria = buildCriteria(userId, reimburseDate, reimburseDateFrom, reimburseDateTo, destination, purpose);
+        return template.select(TaxiReimbursement.class)
+                .matching(Query.query(criteria))
+                .all()
+                .map(tr -> tr.getAmount() != null ? tr.getAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
      * 构建查询条件
      */
     private Criteria buildCriteria(UUID userId,
                                    LocalDate reimburseDate,
+                                   LocalDate reimburseDateFrom,
+                                   LocalDate reimburseDateTo,
                                    String destination,
                                    String purpose) {
         Criteria criteria = Criteria.empty();
@@ -92,7 +143,10 @@ public class AdminTaxiReimbursementService {
             criteria = criteria.and(Criteria.where("user_id").is(userId));
         }
 
-        if (reimburseDate != null) {
+        if (reimburseDateFrom != null && reimburseDateTo != null) {
+            criteria = criteria.and(Criteria.where("reimburse_date").greaterThanOrEquals(reimburseDateFrom));
+            criteria = criteria.and(Criteria.where("reimburse_date").lessThanOrEquals(reimburseDateTo));
+        } else if (reimburseDate != null) {
             criteria = criteria.and(Criteria.where("reimburse_date").is(reimburseDate));
         }
 

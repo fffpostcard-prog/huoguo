@@ -134,19 +134,45 @@ public class AdminTaxiReimbursementController {
     // ==================== 条件查询 ====================
 
     /**
+     * 按条件汇总报销金额
+     */
+    @GetMapping("/query/sum")
+    public Mono<ApiResponse<java.math.BigDecimal>> sumAmount(
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String reimburseDate,
+            @RequestParam(required = false) String reimburseDateFrom,
+            @RequestParam(required = false) String reimburseDateTo,
+            @RequestParam(required = false) String destination,
+            @RequestParam(required = false) String purpose) {
+
+        UUID userUuid = parseUuid(userId);
+        LocalDate date = parseLocalDate(reimburseDate);
+        LocalDate from = parseLocalDate(reimburseDateFrom);
+        LocalDate to = parseLocalDate(reimburseDateTo);
+
+        return adminTaxiReimbursementService.sumAmount(userUuid, date, from, to, destination, purpose)
+                .map(ApiResponse::success)
+                .onErrorResume(e -> Mono.just(ApiResponse.<java.math.BigDecimal>fail("汇总报销金额失败：" + e.getMessage())));
+    }
+
+    /**
      * 不分页条件查询
      */
     @GetMapping("/query")
     public Mono<ApiResponse<List<TaxiReimbursement>>> query(
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String reimburseDate,
+            @RequestParam(required = false) String reimburseDateFrom,
+            @RequestParam(required = false) String reimburseDateTo,
             @RequestParam(required = false) String destination,
             @RequestParam(required = false) String purpose) {
 
         UUID userUuid = parseUuid(userId);
         LocalDate date = parseLocalDate(reimburseDate);
+        LocalDate from = parseLocalDate(reimburseDateFrom);
+        LocalDate to = parseLocalDate(reimburseDateTo);
 
-        return adminTaxiReimbursementService.query(userUuid, date, destination, purpose)
+        return adminTaxiReimbursementService.query(userUuid, date, from, to, destination, purpose)
                 .collectList()
                 .map(ApiResponse::success)
                 .onErrorResume(e -> Mono.just(ApiResponse.<java.util.List<TaxiReimbursement>>fail("查询报销记录失败：" + e.getMessage())));
@@ -159,6 +185,8 @@ public class AdminTaxiReimbursementController {
     public Mono<ApiResponse<PageResult<TaxiReimbursement>>> queryWithPage(
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String reimburseDate,
+            @RequestParam(required = false) String reimburseDateFrom,
+            @RequestParam(required = false) String reimburseDateTo,
             @RequestParam(required = false) String destination,
             @RequestParam(required = false) String purpose,
             @RequestParam(defaultValue = "0") int page,
@@ -167,9 +195,11 @@ public class AdminTaxiReimbursementController {
 
         UUID userUuid = parseUuid(userId);
         LocalDate date = parseLocalDate(reimburseDate);
+        LocalDate from = parseLocalDate(reimburseDateFrom);
+        LocalDate to = parseLocalDate(reimburseDateTo);
         Pageable pageable = buildPageable(page, size, sort);
 
-        return adminTaxiReimbursementService.queryWithPage(userUuid, date, destination, purpose, pageable)
+        return adminTaxiReimbursementService.queryWithPage(userUuid, date, from, to, destination, purpose, pageable)
                 .map(ApiResponse::success)
                 .onErrorResume(e -> Mono.just(ApiResponse.<PageResult<TaxiReimbursement>>fail("分页查询报销记录失败：" + e.getMessage())));
     }

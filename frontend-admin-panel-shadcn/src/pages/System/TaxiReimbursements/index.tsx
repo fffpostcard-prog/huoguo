@@ -67,7 +67,50 @@ import {
   deleteTaxiReimbursement,
 } from '@/api/system/AdminTaxiReimbursement';
 import { queryUsers } from '@/api/system/AdminSysUser';
+import { get } from '@/utils/request';
 import { toast } from 'sonner';
+
+/** 报销周：周日～周六，周六为结束日 */
+function getWeekRangeEndingSaturday(date: Date): { start: string; end: string } {
+  const d = new Date(date);
+  const day = d.getDay(); // 0=Sun, 6=Sat
+  const toSaturday = day === 6 ? 0 : 6 - day;
+  const saturday = new Date(d);
+  saturday.setDate(d.getDate() + toSaturday);
+  const start = new Date(saturday);
+  start.setDate(saturday.getDate() - 6);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: saturday.toISOString().slice(0, 10),
+  };
+}
+
+function getPreviousWeekStartEnd(start: string): { start: string; end: string } {
+  const s = new Date(start);
+  s.setDate(s.getDate() - 7);
+  const e = new Date(s);
+  e.setDate(s.getDate() + 6);
+  return { start: s.toISOString().slice(0, 10), end: e.toISOString().slice(0, 10) };
+}
+
+function getNextWeekStartEnd(end: string): { start: string; end: string } {
+  const e = new Date(end);
+  e.setDate(e.getDate() + 7);
+  const s = new Date(e);
+  s.setDate(e.getDate() - 6);
+  return { start: s.toISOString().slice(0, 10), end: e.toISOString().slice(0, 10) };
+}
+
+function formatWeekLabel(start: string, end: string): string {
+  const s = new Date(start);
+  const e = new Date(end);
+  return `${s.getFullYear()}年${s.getMonth() + 1}月${s.getDate()}日 - ${e.getFullYear()}年${e.getMonth() + 1}月${e.getDate()}日`;
+}
+
+function formatCurrency(value: number): string {
+  const n = Number.isFinite(Number(value)) ? Number(value) : 0;
+  return '¥ ' + n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 const taxiReimbursementSchema = z.object({
   userId: z.string().uuid('请输入有效的用户ID'),
@@ -103,6 +146,14 @@ export default function TaxiReimbursementsPage() {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
   const [users, setUsers] = useState<SysUser[]>([]);
+  const [weekRange, setWeekRange] = useState<{ start: string; end: string }>(() =>
+    getWeekRangeEndingSaturday(new Date())
+  );
+  const [weekTotalAmount, setWeekTotalAmount] = useState<number>(0);
+
+  const getTaxiReimbursementSum = (params?: TaxiReimbursementQueryParams): Promise<number> => {
+    return get<number>('/api/admin/taxi-reimbursements/query/sum', params as any);
+  };
 
   const getTodayString = () => {
     return new Date().toISOString().slice(0, 10);
@@ -141,6 +192,13 @@ export default function TaxiReimbursementsPage() {
     return parts.join(' / ') || idPart || '未知用户';
   };
 
+  const getNicknameByUserId = (userId?: string) => {
+    if (!userId) return '-';
+    const user = users.find((u) => u.id === userId);
+    if (!user) return `${userId.substring(0, 8)}...`;
+    return user.nickname || user.accountIdentifier || userId.substring(0, 8) + '...';
+  };
+
   // 处理排序点击
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -167,10 +225,12 @@ export default function TaxiReimbursementsPage() {
 
       const params: TaxiReimbursementPageQueryParams = {
         ...queryParams,
+        reimburseDateFrom: weekRange.start,
+        reimburseDateTo: weekRange.end,
         page: currentPage - 1,
         size: pageSize,
         sort: sortParam,
-      };
+      } as TaxiReimbursementPageQueryParams;
       const result = await queryTaxiReimbursementsWithPage(params);
       setRecords(result.data);
       setTotal(result.total);
@@ -181,9 +241,28 @@ export default function TaxiReimbursementsPage() {
     }
   };
 
+  const loadWeekSum = async () => {
+    try {
+      const sumParams: TaxiReimbursementQueryParams = {
+        ...queryParams,
+        reimburseDateFrom: weekRange.start,
+        reimburseDateTo: weekRange.end,
+      } as TaxiReimbursementQueryParams;
+      const sum = await getTaxiReimbursementSum(sumParams);
+      const parsed = typeof sum === 'number' ? sum : Number(sum);
+      setWeekTotalAmount(Number.isNaN(parsed) ? 0 : parsed);
+    } catch {
+      setWeekTotalAmount(0);
+    }
+  };
+
   useEffect(() => {
     loadRecords();
-  }, [currentPage, pageSize, queryParams, sortField, sortDirection]);
+  }, [currentPage, pageSize, queryParams, sortField, sortDirection, weekRange.start, weekRange.end]);
+
+  useEffect(() => {
+    loadWeekSum();
+  }, [queryParams, weekRange.start, weekRange.end]);
 
   useEffect(() => {
     loadUsers();
@@ -206,6 +285,21 @@ export default function TaxiReimbursementsPage() {
       page: 0,
       size: pageSize,
     });
+    setCurrentPage(1);
+  };
+
+  const handlePrevWeek = () => {
+    setWeekRange(getPreviousWeekStartEnd(weekRange.start));
+    setCurrentPage(1);
+  };
+
+  const handleNextWeek = () => {
+    setWeekRange(getNextWeekStartEnd(weekRange.end));
+    setCurrentPage(1);
+  };
+
+  const handleThisWeek = () => {
+    setWeekRange(getWeekRangeEndingSaturday(new Date()));
     setCurrentPage(1);
   };
 
@@ -263,6 +357,7 @@ export default function TaxiReimbursementsPage() {
       }
       handleCloseModal();
       loadRecords();
+      loadWeekSum();
     } catch (error: any) {
       toast.error(error.message || '操作失败');
     }
@@ -276,6 +371,7 @@ export default function TaxiReimbursementsPage() {
       toast.success('删除打车报销记录成功');
       setRecordToDelete(null);
       loadRecords();
+      loadWeekSum();
     } catch (error: any) {
       toast.error(error.message || '删除打车报销记录失败');
     }
@@ -300,6 +396,29 @@ export default function TaxiReimbursementsPage() {
           新增报销
         </Button>
       </div>
+
+      {/* 报销周选择 */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm text-muted-foreground">报销周</div>
+              <div className="font-medium">{formatWeekLabel(weekRange.start, weekRange.end)}</div>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={handlePrevWeek}>
+                上一周
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={handleThisWeek}>
+                本周
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={handleNextWeek}>
+                下一周
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 搜索表单 */}
       <Card>
@@ -411,7 +530,7 @@ export default function TaxiReimbursementsPage() {
                     sortDirection={sortDirection}
                     onSort={handleSort}
                   >
-                    用户ID
+                    用户昵称
                   </SortableTableHead>
                   <SortableTableHead
                     field="reimburse_date"
@@ -474,9 +593,7 @@ export default function TaxiReimbursementsPage() {
                 ) : (
                   records.map((record) => (
                     <TableRow key={record.id}>
-                      <TableCell className="font-mono text-xs">
-                        {record.userId?.substring(0, 8)}...
-                      </TableCell>
+                      <TableCell>{getNicknameByUserId(record.userId)}</TableCell>
                       <TableCell>
                         {record.reimburseDate || '-'}
                       </TableCell>
@@ -592,6 +709,12 @@ export default function TaxiReimbursementsPage() {
                 </PaginationContent>
               </Pagination>
             )}
+          </div>
+
+          {/* 报销总额度（当前周 + 当前搜索条件） */}
+          <div className="mt-4 pt-4 border-t text-right">
+            <span className="text-muted-foreground">报销总额度：</span>
+            <span className="ml-2 font-semibold">{formatCurrency(weekTotalAmount)}</span>
           </div>
         </CardContent>
       </Card>

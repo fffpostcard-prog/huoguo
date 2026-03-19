@@ -228,6 +228,10 @@ export interface TaxiReimbursementQueryParams {
   userId?: string;
   /** 报销日期（可选，ISO 日期字符串） */
   reimburseDate?: string;
+  /** 报销日期范围起（可选） */
+  reimburseDateFrom?: string;
+  /** 报销日期范围止（可选） */
+  reimburseDateTo?: string;
   /** 去哪里（可选，支持模糊查询） */
   destination?: string;
   /** 行程目的（可选，支持模糊查询） */

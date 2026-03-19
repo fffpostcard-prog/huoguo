@@ -68,3 +68,13 @@ export const queryTaxiReimbursementsWithPage = (
   return get<PageResult<TaxiReimbursement>>('/api/admin/taxi-reimbursements/query/page', params);
 };
 
+/**
+ * 按条件汇总报销金额
+ * GET /api/admin/taxi-reimbursements/query/sum
+ */
+export const getTaxiReimbursementSum = (
+  params?: TaxiReimbursementQueryParams
+): Promise<number> => {
+  return get<number>('/api/admin/taxi-reimbursements/query/sum', params);
+};
+
