@@ -42,7 +42,7 @@ public class ModuleInitialization implements ApplicationRunner, PermitAllPathPro
     public void run(ApplicationArguments args) {
         log.info("开始初始化系统模块...");
 
-        initializeAdminRole()
+        initializeRoles()
             .then(initializeRootUser())
             .doOnSuccess(v -> log.info("系统模块初始化完成"))
             .doOnError(e -> log.error("系统模块初始化失败", e))
@@ -50,34 +50,38 @@ public class ModuleInitialization implements ApplicationRunner, PermitAllPathPro
     }
     
     /**
-     * 初始化 ADMIN 角色
-     * 检查是否存在 code 为 "ADMIN" 的角色，如果不存在则创建
+     * 初始化基础角色
+     * 检查并创建：ADMIN / USER / SALES / EDITOR
      * 
      * 注意：SysRole 使用业务主键（code），需要使用 template.insert() 强制插入
      * 
      * @return Mono<Void>
      */
-    private Mono<Void> initializeAdminRole() {
-        return roleRepository.existsById("ADMIN")
-            .flatMap(exists -> {
-                if (exists) {
-                    log.debug("ADMIN 角色已存在");
-                    return Mono.empty();
-                } else {
-                    log.info("创建 ADMIN 角色...");
+    private Mono<Void> initializeRoles() {
+        return ensureRole("ADMIN", "管理员", "系统管理员")
+                .then(ensureRole("USER", "用户", "普通用户"))
+                .then(ensureRole("SALES", "销售", "销售岗位"))
+                .then(ensureRole("EDITOR", "剪辑师", "剪辑师岗位"));
+    }
+
+    private Mono<Void> ensureRole(String code, String name, String description) {
+        return roleRepository.existsById(code)
+                .flatMap(exists -> {
+                    if (exists) {
+                        log.debug("{} 角色已存在", code);
+                        return Mono.empty();
+                    }
+                    log.info("创建 {} 角色...", code);
                     SysRole role = new SysRole();
-                    role.setCode("ADMIN");
-                    role.setName("管理员");
-                    role.setDescription("系统管理员");
+                    role.setCode(code);
+                    role.setName(name);
+                    role.setDescription(description);
                     role.setCreatedAt(OffsetDateTime.now());
-                    
-                    // 使用 insert() 方法强制插入新记录，避免 save() 尝试更新
                     return template.insert(role)
-                        .doOnSuccess(v -> log.info("成功创建 ADMIN 角色"))
-                        .doOnError(e -> log.error("创建 ADMIN 角色失败", e))
-                        .then();
-                }
-            });
+                            .doOnSuccess(v -> log.info("成功创建 {} 角色", code))
+                            .doOnError(e -> log.error("创建 {} 角色失败", code, e))
+                            .then();
+                });
     }
 
     /**

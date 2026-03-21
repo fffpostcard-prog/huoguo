@@ -7,6 +7,7 @@ import UsersPage from '@/pages/System/Users';
 import RolesPage from '@/pages/System/Roles';
 import ConfigsPage from '@/pages/System/Configs';
 import TaxiReimbursementsPage from '@/pages/System/TaxiReimbursements';
+import CommissionCalcPage from '@/pages/System/CommissionCalc';
 import SettingsPage from '@/pages/Settings';
 import './App.css';
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="system/roles" element={<RolesPage />} />
           <Route path="system/configs" element={<ConfigsPage />} />
           <Route path="system/taxi-reimbursements" element={<TaxiReimbursementsPage />} />
+          <Route path="system/commission-calc" element={<CommissionCalcPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

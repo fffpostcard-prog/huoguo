@@ -38,9 +38,10 @@ public class RegisterService {
      * @param username 用户名
      * @param password 密码（明文）
      * @param nickname 昵称
+     * @param position 岗位（SALES/EDITOR）
      * @return 注册成功返回用户对象，失败返回错误
      */
-    public Mono<SysUser> register(String username, String password, String nickname) {
+    public Mono<SysUser> register(String username, String password, String nickname, String position) {
         // 1. 检查用户名是否已存在（账号类型固定为 USERNAME）
         Criteria criteria = Criteria.where("accountType").is("USERNAME")
                 .and(Criteria.where("accountIdentifier").is(username));
@@ -68,7 +69,8 @@ public class RegisterService {
                         
                         // 5. 设置默认值
                         user.setStatus("ENABLED");
-                        user.setRoleCode("USER");
+                        // 岗位映射到 roleCode（需 sys_role 中存在对应 code）
+                        user.setRoleCode(position);
                         
                         // 6. 加密密码
                         String passwordHash = passwordUtil.encode(password);
@@ -91,6 +93,13 @@ public class RegisterService {
                         return savedUser;
                     })
                 );
+    }
+
+    /**
+     * 兼容旧签名：不传岗位时默认 USER
+     */
+    public Mono<SysUser> register(String username, String password, String nickname) {
+        return register(username, password, nickname, "USER");
     }
 }
 

@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Users, UserCog, Moon, Sun, LogOut, Settings, ChevronRight, MoreVertical, PlusCircle, Mail, Home, Cog, Receipt, Car } from 'lucide-react';
+import { Users, UserCog, Moon, Sun, LogOut, Settings, ChevronRight, MoreVertical, PlusCircle, Mail, Home, Cog, Receipt, Car, Calculator } from 'lucide-react';
 import { getUserInfo, clearUserInfo } from '@/utils/user';
 import { removeToken } from '@/utils/request';
 import { logout } from '@/api/system/Logout';
@@ -66,6 +66,11 @@ const menuItems = [
         title: '打车报销',
         url: '/system/taxi-reimbursements',
         icon: Car,
+      },
+      {
+        title: '提成计算',
+        url: '/system/commission-calc',
+        icon: Calculator,
       },
     ],
   },

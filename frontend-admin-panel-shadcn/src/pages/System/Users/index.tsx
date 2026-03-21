@@ -87,6 +87,7 @@ const registerSchema = z.object({
   username: z.string().min(2, '用户名至少2个字符'),
   password: z.string().min(6, '密码至少6个字符'),
   nickname: z.string().min(1, '昵称不能为空'),
+  position: z.enum(['SALES', 'EDITOR'], { message: '请选择岗位' }),
 });
 
 type UserFormData = z.infer<typeof userSchema>;
@@ -120,6 +121,7 @@ export default function UsersPage() {
       username: '',
       password: '',
       nickname: '',
+      position: 'SALES',
     },
   });
 
@@ -678,6 +680,27 @@ export default function UsersPage() {
                     <FormControl>
                       <Input placeholder="请输入昵称" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={registerForm.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>岗位</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="请选择岗位" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="SALES">销售</SelectItem>
+                        <SelectItem value="EDITOR">剪辑师</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

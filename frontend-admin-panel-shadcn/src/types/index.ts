@@ -27,7 +27,7 @@ export interface SysUser {
   id?: string;
   /** 用户状态（如 ENABLED / DISABLED / LOCKED） */
   status?: string;
-  /** 用户角色代码，关联 sys_role 表的 code 字段 */
+  /** 用户角色代码，关联 sys_role 表的 code 字段，也作为岗位（SALES/EDITOR） */
   roleCode?: string;
   /** 账号类型（如 EMAIL / PHONE / USERNAME / WECHAT） */
   accountType?: string;
@@ -62,6 +62,9 @@ export interface SysUser {
   /** 乐观锁版本号 */
   version?: number;
 }
+
+/** 用户岗位类型 */
+export type UserPosition = 'SALES' | 'EDITOR';
 
 /**
  * 系统角色实体
@@ -108,6 +111,8 @@ export interface RegisterRequest {
   password: string;
   /** 昵称 */
   nickname: string;
+  /** 岗位（销售/剪辑师） */
+  position: 'SALES' | 'EDITOR';
 }
 
 /**
@@ -248,5 +253,37 @@ export interface TaxiReimbursementPageQueryParams extends TaxiReimbursementQuery
   size?: number;
   /** 排序字段（可选，格式：field,asc/desc，默认按createdAt降序） */
   sort?: string;
+}
+
+/**
+ * 销售业绩实体
+ */
+export interface SalesPerformance {
+  /** 业绩唯一标识 */
+  id: string;
+  /** 日期 */
+  date: string;
+  /** 商家名称 */
+  merchant: string;
+  /** 金额 */
+  amount: number;
+  /** 月数 */
+  months: number;
+}
+
+/**
+ * 剪辑师工作记录实体
+ */
+export interface EditorWorkRecord {
+  /** 记录唯一标识 */
+  id: string;
+  /** 日期 */
+  date: string;
+  /** 视频数量 */
+  videoCount: number;
+  /** 文案数量 */
+  copyCount: number;
+  /** 备注 */
+  remark: string;
 }
 

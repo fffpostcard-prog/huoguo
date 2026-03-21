@@ -34,6 +34,7 @@ public class RegisterController {
         String username = requestBody.get("username");
         String password = requestBody.get("password");
         String nickname = requestBody.get("nickname");
+        String position = requestBody.get("position");
         
         // 参数验证
         if (username == null || username.isEmpty()) {
@@ -45,8 +46,14 @@ public class RegisterController {
         if (nickname == null || nickname.isEmpty()) {
             return Mono.just(ApiResponse.fail("昵称不能为空"));
         }
+        if (position == null || position.isEmpty()) {
+            return Mono.just(ApiResponse.fail("岗位不能为空"));
+        }
+        if (!"SALES".equalsIgnoreCase(position) && !"EDITOR".equalsIgnoreCase(position)) {
+            return Mono.just(ApiResponse.fail("岗位不合法"));
+        }
         
-        return registerService.register(username, password, nickname)
+        return registerService.register(username, password, nickname, position.toUpperCase())
                 .map(ApiResponse::success)
                 .onErrorResume(e -> Mono.just(ApiResponse.fail(e.getMessage())));
     }
